@@ -1,0 +1,8 @@
+- name: Restart ARK service
+  systemd:
+    name: "{{ systemd_service_name }}"
+    state: restarted
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes

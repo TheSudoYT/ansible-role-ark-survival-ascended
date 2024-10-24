@@ -1,0 +1,32 @@
+[Unit]
+Description=ARK Survival Ascended Dedicated Server ({{ map_name }})
+After=network.target
+
+[Service]
+Type=simple
+LimitNOFILE=10000
+User=steam
+Group=steam
+ExecStartPre={{ steam_install_directory_path }}/steamcmd.sh +runscript {{ steam_install_directory_path }}/download-ark.txt
+WorkingDirectory={{ ark_install_directory_path }}/ShooterGame/Binaries/Win64
+Environment=XDG_RUNTIME_DIR=/run/user/$(id -u)
+Environment="STEAM_COMPAT_CLIENT_INSTALL_PATH={{ ark_install_directory_path }}"
+Environment="STEAM_COMPAT_DATA_PATH={{ ark_install_directory_path }}/steamapps/compatdata/2430930"
+ExecStart={{ ark_install_directory_path }}/compatibilitytools.d/GE-Proton{{ ge_proton_version }}/proton run ArkAscendedServer.exe {{ map_name }}?listen?SessionName={{ session_name }}?AutoSavePeriodMinutes={{ auto_save_period_minutes }} \
+-clusterID={{ clusterID }} \
+-Clusterdiroverride="{{ ClusterDirOverride }}" \
+-ServerAdminPassword="{{ ServerAdminPassword }}" \
+-Port={{ port }} \
+-QueryPort={{ QueryPort }} \
+-WinLiveMaxPlayers={{ WinLiveMaxPlayers }} \
+-ServerPassword="{{ ServerPassword }}" \
+-RCONEnabled={{ RCONEnabled }} \
+-RCONPort={{ RCONPort }} \
+{% if use_mods %}-mods={{ mods | join(',') }} \{% endif %}
+{% if NoBattleEye %}-NoBattlEye{% endif %}
+
+Restart=on-failure
+RestartSec=20s
+
+[Install]
+WantedBy=multi-user.target

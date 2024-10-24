@@ -1,0 +1,212 @@
+---
+- name: Check available disk space in {{ ark_install_directory_path }}
+  shell: df --output=avail {{ ark_install_directory_path }} | tail -n 1
+  register: disk_space
+
+- name: Ensure there is at least 20GB of free disk space in {{ ark_install_directory_path }}
+  assert:
+    that:
+      - disk_space.stdout | int >= 20971520  # 20GB in KB
+    fail_msg: "Not enough disk space in {{ ark_install_directory_path }}. At least 20GB is required."
+
+- name: Create Steam user
+  user:
+    name: steam
+    home: /home/steam
+    state: present
+    create_home: yes
+
+- name: Create necessary directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: steam
+    group: steam
+  with_items:
+    - "{{steam_install_directory_path}}"
+    - "{{ark_install_directory_path}}"
+
+- name: Ensure NFS package is installed
+  apt:
+    name: nfs-common
+    state: present
+    update_cache: yes
+  when: mount_nfs and ansible_facts['os_family'] == "Debian"
+  tags: nfs
+
+- name: Create mount points for NFS shares
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  with_items: "{{ nfs_shares }}"
+  when: mount_nfs
+  tags: nfs
+
+- name: Mount NFS share
+  mount:
+    path: "{{ item.path }}"
+    src: "{{ item.server }}"
+    fstype: nfs
+    state: mounted
+    opts: "defaults"
+  with_items: "{{ nfs_shares }}"
+  when: mount_nfs
+  tags: nfs
+
+- name: Ensure NFS shares are persistent across reboots
+  mount:
+    path: "{{ item.path }}"
+    src: "{{ item.server }}"
+    fstype: nfs
+    state: present
+    opts: "defaults"
+  with_items: "{{ nfs_shares }}"
+  when: mount_nfs
+  tags: nfs
+  
+- name: Install required packages
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  with_items:
+    - curl
+    - lib32gcc-s1 #package renamed from lib32gcc1 to this package in the repos
+    - lsof
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Download Proton from Glorious Eggroll
+  get_url:
+    url: "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton{{ ge_proton_version }}/GE-Proton{{ ge_proton_version }}.tar.gz"
+    dest: "{{steam_install_directory_path}}/GE-Proton{{ ge_proton_version }}.tar.gz"
+
+- name: Download and install SteamCMD
+  get_url:
+    url: "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"
+    dest: "{{steam_install_directory_path}}/steamcmd_linux.tar.gz"
+
+- name: Extract SteamCMD
+  unarchive:
+    src: "{{steam_install_directory_path}}/steamcmd_linux.tar.gz"
+    dest: "{{steam_install_directory_path}}/"
+    owner: steam
+    group: steam
+    remote_src: yes
+
+- name: Extract GE Proton into steam directory
+  unarchive:
+    src: "{{steam_install_directory_path}}/GE-Proton{{ ge_proton_version }}.tar.gz"
+    dest: "{{ark_install_directory_path}}/compatibilitytools.d"
+    owner: steam
+    group: steam
+    remote_src: yes
+
+- name: Set up SteamCMD script to download Ark
+  copy:
+    dest: "{{steam_install_directory_path}}/download-ark.txt"
+    content: |
+      @ShutdownOnFailedCommand 1
+      @NoPromptForPassword 1
+      force_install_dir {{ark_install_directory_path}}
+      login anonymous
+      app_update 2430930 validate
+      quit
+    owner: steam
+    group: steam
+    mode: 0644
+
+- name: Download Ark using SteamCMD
+  shell: su - steam -c "{{steam_install_directory_path}}/steamcmd.sh +runscript {{steam_install_directory_path}}/download-ark.txt"
+
+- name: Create systemd service for {{systemd_service_name}}.service
+  template:
+    src: ark.service.j2
+    dest: /etc/systemd/system/{{systemd_service_name}}.service
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - Reload systemd daemon
+    - Restart ARK service
+  tags: update_user_data
+
+- name: Template GameUserSettings.ini for {{systemd_service_name}}.service
+  template:
+    src: GameUserSettings.ini.j2
+    dest: "{{ark_install_directory_path}}/ShooterGame/Saved/Config/WindowsServer/GameUserSettings.ini"
+    owner: steam
+    group: steam
+    mode: 0644
+  when: template_game_user_settings
+  notify: Restart ARK service
+  tags: update_user_data
+
+- name: Copy GameUserSettings.ini from user-specified path
+  copy:
+    src: "{{ game_user_settings_path }}"
+    dest: "{{ ark_install_directory_path }}/ShooterGame/Saved/Config/WindowsServer/GameUserSettings.ini"
+    owner: steam
+    group: steam
+    mode: 0644
+  when: template_game_user_settings == false
+  notify: Restart ARK service
+  tags: update_user_data
+
+- name: Enable and start {{systemd_service_name}}.service
+  systemd:
+    name: "{{systemd_service_name}}"
+    enabled: true
+    state: started
+
+- name: Create backup script for Ark
+  template:
+    src: ark_backup_script.sh.j2
+    dest: "{{ark_install_directory_path}}/ark_backup_script.sh"
+    owner: root
+    group: root
+    mode: 0755
+  when: configure_backups
+  tags: backups
+
+- name: Set up cron job for Ark backups
+  cron:
+    name: "Ark server backup"
+    user: steam
+    job: "{{ark_install_directory_path}}/ark_backup_script.sh >> {{ark_install_directory_path}}/ark_backup_log.log 2>&1"
+    minute: "{{ cron_minute }}"
+    hour: "{{ cron_hour }}"
+    day: "{{ cron_day }}"
+    month: "{{ cron_month }}"
+    weekday: "{{ cron_weekday }}"
+  when: configure_backups
+  tags: backups
+
+- name: Ensure logrotate is installed
+  apt:
+    name: logrotate
+    state: present
+  when: ansible_facts['os_family'] == "Debian" and configure_backups
+  tags: backups
+
+- name: Create logrotate config for ark_backup_log.log
+  copy:
+    dest: "/etc/logrotate.d/ark"
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      {{ark_install_directory_path}}/ark_backup_log.log {
+          daily
+          rotate 7
+          compress
+          missingok
+          notifempty
+          create 0644 steam steam
+          sharedscripts
+          endscript
+      }
+  when: ansible_facts['os_family'] == "Debian" and configure_backups
+  tags: backups

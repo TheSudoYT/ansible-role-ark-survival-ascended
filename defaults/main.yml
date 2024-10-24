@@ -1,0 +1,36 @@
+---
+ark_install_directory_path: "/ark-asa"
+steam_install_directory_path: "/opt/steam"
+ge_proton_version: "9-16"
+template_game_user_settings: true
+game_user_settings_path: ""
+systemd_service_name: "ark-aberration"
+configure_backups: true
+cron_minute: "*/30"
+cron_hour: "*"
+cron_day: "*"
+cron_month: "*"
+cron_weekday: "*"
+dir_to_backup: "/ark-asa/ShooterGame/Saved"
+backup_dir: "/opt/ark-cluster/ASACluster/backups/island"
+cluster_dir_to_backup: "/opt/ark-cluster/ASACluster/clusters"
+cluster_backup_dir: "/opt/ark-cluster/ASACluster/backups/clusters"
+backup_cluster: false
+map_name: "Aberration_WP"
+session_name: "middle-earth-aberration"
+auto_save_period_minutes: 10.0
+clusterID: "fellowship"
+ClusterDirOverride: "/opt/ark-cluster/ASACluster"
+ServerAdminPassword: "password"
+port: 7779
+QueryPort: 27017
+WinLiveMaxPlayers: 20
+ServerPassword: "password"
+RCONEnabled: "True"
+RCONPort: 27022
+mods: []
+use_mods: false
+NoBattleEye: true
+mount_nfs: false
+nfs_shares:
+  - { path: "/opt/ark-cluster", server: "nas.lab.com:/mnt/nas/ark" }

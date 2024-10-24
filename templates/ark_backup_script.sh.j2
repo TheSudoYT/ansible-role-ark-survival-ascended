@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# Backup variables
+DIR_TO_BACKUP="{{ dir_to_backup }}"
+BACKUP_DIR="{{ backup_dir }}"
+
+# Cluster backup variables (if BACKUP_CLUSTER is true)
+CLUSTER_DIR_TO_BACKUP="{{ cluster_dir_to_backup }}"
+CLUSTER_BACKUP_DIR="{{ cluster_backup_dir }}"
+
+# Check if we should backup the cluster
+BACKUP_CLUSTER={{ backup_cluster | default('false') }}  # Set this to true to enable cluster backup
+
+generate_timestamp() {
+    date '+%Y-%m-%d-%H-%M-%S'
+}
+
+TIMESTAMP="$(generate_timestamp)"
+BACKUP_FILENAME="$BACKUP_DIR/scorched_earth_backup_$TIMESTAMP.tar.gz"
+
+# Create backup
+echo "[INFO] Creating Ark Backup"
+tar -zcvf "$BACKUP_FILENAME" "$DIR_TO_BACKUP"
+
+# Find and delete backups older than 7 days
+echo "[INFO] Deleting backups older than 7 days"
+find "$BACKUP_DIR" -name "scorched_earth_backup_*.tar.gz" -mtime +7 -type f -delete
+
+# Backup the cluster directory if BACKUP_CLUSTER is true
+{% if backup_cluster %}
+    CLUSTER_BACKUP_FILENAME="$CLUSTER_BACKUP_DIR/cluster_backup_$TIMESTAMP.tar.gz"
+    echo "[INFO] Creating Cluster Backup"
+    tar -zcvf "$CLUSTER_BACKUP_FILENAME" "$CLUSTER_DIR_TO_BACKUP"
+    
+    echo "[INFO] Deleting cluster backups older than 7 days"
+    find "$CLUSTER_BACKUP_DIR" -name "cluster_backup_*.tar.gz" -mtime +7 -type f -delete
+{% endif %}
