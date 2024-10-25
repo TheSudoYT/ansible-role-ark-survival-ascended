@@ -8,6 +8,7 @@
     that:
       - disk_space.stdout | int >= 20971520  # 20GB in KB
     fail_msg: "Not enough disk space in {{ ark_install_directory_path }}. At least 20GB is required."
+  ignore_errors: true
 
 - name: Create Steam user
   user:
