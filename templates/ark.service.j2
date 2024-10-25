@@ -22,8 +22,12 @@ ExecStart={{ ark_install_directory_path }}/compatibilitytools.d/GE-Proton{{ ge_p
 -ServerPassword="{{ ServerPassword }}" \
 -RCONEnabled={{ RCONEnabled }} \
 -RCONPort={{ RCONPort }} \
-{% if use_mods %}-mods={{ mods | join(',') }} \{% endif %}
-{% if NoBattleEye %}-NoBattlEye{% endif %}
+{% if use_mods %}
+-mods={{ mods | join(',') }} \
+{% endif %}
+{% if NoBattleEye %}
+-NoBattlEye
+{% endif %}
 
 Restart=on-failure
 RestartSec=20s
