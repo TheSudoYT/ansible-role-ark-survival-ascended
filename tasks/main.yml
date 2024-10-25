@@ -129,9 +129,8 @@
     owner: root
     group: root
     mode: 0644
-  notify:
-    - Reload systemd daemon
-    - Restart ARK service
+  notify: Restart ARK service
+  
   tags: update_user_data
 
 - name: Template GameUserSettings.ini for {{systemd_service_name}}.service
