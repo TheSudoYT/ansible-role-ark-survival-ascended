@@ -131,9 +131,14 @@
     group: root
     mode: 0644
   notify: Restart ARK service
-  
   tags: update_user_data
 
+- name: Enable and start {{systemd_service_name}}.service
+  systemd:
+    name: "{{systemd_service_name}}"
+    enabled: true
+    state: started
+    
 - name: Template GameUserSettings.ini for {{systemd_service_name}}.service
   template:
     src: GameUserSettings.ini.j2
@@ -166,12 +171,6 @@
   when: install_game_ini
   notify: Restart ARK service
   tags: update_user_data
-
-- name: Enable and start {{systemd_service_name}}.service
-  systemd:
-    name: "{{systemd_service_name}}"
-    enabled: true
-    state: started
 
 - name: Create backup script for Ark
   template:
