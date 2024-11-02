@@ -3,6 +3,8 @@ ark_install_directory_path: "/ark-asa"
 steam_install_directory_path: "/opt/steam"
 ge_proton_version: "9-16"
 template_game_user_settings: true
+install_game_ini: false
+game_ini_path: ""
 game_user_settings_path: ""
 systemd_service_name: "ark-aberration"
 configure_backups: true

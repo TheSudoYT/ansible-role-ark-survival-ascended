@@ -18,6 +18,8 @@ The following variables can be set to customize the role:
 | `steam_install_directory_path` | `/opt/steam`                                   | Path where SteamCMD and Proton will be installed.                                              |
 | `ge_proton_version`            | `9-16`                                         | The version of GE Proton to download and install.                                              |
 | `template_game_user_settings`  | `true`                                         | Use Jinja templating to install a `GameUserSettings.ini` or copy from a user-specified path.   |
+| `install_game_ini` | `true` | Whether to icopy a custom `Game.ini` to the Ark server. |
+|` game_ini_path` | `""` | Path to `Game.ini` on the ansible controller. |
 | `systemd_service_name`         | `ark-island`                               | The name of the systemd service for managing the ARK server.                                   |
 | `configure_backups`            | `true`                                         | Whether to configure automatic backups and create the backup script and cron job.              |
 | `cron_minute`                  | `"*/30"`                                       | Cron schedule minute field for the backup script.                                              |
@@ -69,7 +71,9 @@ The role includes the following tags for easier task management:
     steam_install_directory_path: "/opt/steam"
     ge_proton_version: "9-16"
     template_game_user_settings: true
-    game_user_settings_path: ""
+    install_game_ini: true
+    game_ini_path: "/path/on/my/pc/Game.ini"
+    game_user_settings_path: "/path/on/my/pc/GameUserSettings.ini"
     systemd_service_name: "ark-aberration"
     configure_backups: true
     cron_minute: "*/30"
