@@ -155,6 +155,17 @@
   notify: Restart ARK service
   tags: update_user_data
 
+- name: Copy Game.ini from user-specified
+  copy:
+    src: "{{ game_ini_path }}"
+    dest: "{{ ark_install_directory_path }}/ShooterGame/Saved/Config/WindowsServer/Game.ini"
+    owner: steam
+    group: steam
+    mode: 0644
+  when: install_game_ini
+  notify: Restart ARK service
+  tags: update_user_data
+
 - name: Enable and start {{systemd_service_name}}.service
   systemd:
     name: "{{systemd_service_name}}"
