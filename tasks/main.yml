@@ -26,6 +26,7 @@
   with_items:
     - "{{steam_install_directory_path}}"
     - "{{ark_install_directory_path}}"
+    - "{{ark_install_directory_path}}/compatibilitytools.d"
 
 - name: Ensure NFS package is installed
   apt:
