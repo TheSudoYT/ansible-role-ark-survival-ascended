@@ -106,6 +106,25 @@
     group: steam
     remote_src: yes
 
+- name: Create ark app directory for steam compatdata
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: steam
+    group: steam
+  with_items:
+    - "{{ark_install_directory_path}}/steamapps/compatdata"
+    - "{{ark_install_directory_path}}/steamapps/compatdata/2430930"
+
+- name: Install default prefix into compdatdata path
+  copy:
+    src: "{{ark_install_directory_path}}/compatibilitytools.d/GE-Proton9-16/files/share/default_pfx"
+    dest: "{{ark_install_directory_path}}/compatdata/2430930"
+    owner: steam
+    group: steam
+    directory_mode: yes
+    remote_src: yes
+
 - name: Set up SteamCMD script to download Ark
   copy:
     dest: "{{steam_install_directory_path}}/download-ark.txt"
@@ -138,7 +157,7 @@
     name: "{{systemd_service_name}}"
     enabled: true
     state: started
-    
+
 - name: Template GameUserSettings.ini for {{systemd_service_name}}.service
   template:
     src: GameUserSettings.ini.j2
